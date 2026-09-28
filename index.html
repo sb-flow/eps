@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>База строительных объектов — Uzbekistan</title>
+  <link rel="stylesheet" href="styles.css" />
+  <meta name="description" content="MVP интерфейс базы строительных объектов Узбекистана: поиск, фильтры, карта, участники и спецификации." />
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-mark">SF</div>
+        <div><strong>Construction Radar</strong><span>UZ / CRM prototype</span></div>
+      </div>
+
+      <div class="sidebar-section">
+        <div class="section-title">Быстрый обзор</div>
+        <div id="sidebarStats" class="mini-stats"></div>
+      </div>
+
+      <div class="sidebar-section filters">
+        <div class="section-title-row">
+          <div class="section-title">Фильтры</div>
+          <button id="resetFilters" class="link-btn" type="button">Сбросить</button>
+        </div>
+
+        <label class="field-label" for="regionFilter">Регион</label>
+        <select id="regionFilter" class="field"><option value="">Все регионы</option></select>
+
+        <label class="field-label" for="categoryFilter">Сегмент / категория</label>
+        <select id="categoryFilter" class="field"><option value="">Все сегменты</option></select>
+
+        <label class="field-label" for="stageFilter">Стадия</label>
+        <select id="stageFilter" class="field"><option value="">Все стадии</option></select>
+
+        <label class="field-label" for="priorityFilter">Приоритет</label>
+        <select id="priorityFilter" class="field"><option value="">Все приоритеты</option></select>
+
+        <label class="field-label" for="companyRoleFilter">Роль компании</label>
+        <select id="companyRoleFilter" class="field">
+          <option value="all">Все участники</option>
+          <option value="developer">Застройщик</option>
+          <option value="client">Заказчик</option>
+          <option value="designer">Проектировщик</option>
+          <option value="contractor">Подрядчик</option>
+          <option value="participant">Другой участник</option>
+        </select>
+
+        <label class="field-label" for="companyFilter">Компания / участник</label>
+        <div class="input-with-icon">
+          <span>⌕</span>
+          <input id="companyFilter" class="field" list="companySuggestions" placeholder="Название или часть названия…" autocomplete="off" />
+          <datalist id="companySuggestions"></datalist>
+        </div>
+        <div class="field-hint">Нечёткое сопоставление: ООО/MCHJ, кавычки, сокращения и кириллица/латиница.</div>
+        <div id="companyMatches" class="company-matches" aria-live="polite"></div>
+
+        <label class="check-row">
+          <input id="onlyContacts" type="checkbox" />
+          <span>Только объекты с контактами</span>
+        </label>
+        <label class="check-row">
+          <input id="onlyCoords" type="checkbox" />
+          <span>Только объекты на карте</span>
+        </label>
+      </div>
+
+      <div class="sidebar-section sidebar-bottom">
+        <button id="mapSettingsBtn" class="secondary-btn full" type="button">Google Maps API</button>
+        <div class="source-note">Данные загружены из Excel. Изменения в MVP хранятся локально в браузере.</div>
+      </div>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <div>
+          <div class="eyebrow">База строительных объектов</div>
+          <h1>Объекты и участники строительства</h1>
+        </div>
+        <div class="top-actions">
+          <button id="attachmentsBtn" class="secondary-btn" type="button">Спецификации <span id="attachmentCount" class="badge">0</span></button>
+          <button id="uploadSpecBtn" class="primary-btn" type="button">＋ Загрузить спецификацию</button>
+        </div>
+      </header>
+
+      <section class="toolbar-card">
+        <div class="search-wrap">
+          <span class="search-icon">⌕</span>
+          <input id="globalSearch" placeholder="Поиск: объект, адрес, компания, ИНН, проектировщик, подрядчик, ID Shaffof…" />
+          <kbd>⌘ K</kbd>
+        </div>
+        <div class="view-switch" role="tablist" aria-label="Вид">
+          <button data-view="table" class="view-btn active" type="button">Таблица</button>
+          <button data-view="cards" class="view-btn" type="button">Карточки</button>
+          <button data-view="map" class="view-btn" type="button">Карта</button>
+        </div>
+      </section>
+
+      <section id="kpiStrip" class="kpi-strip"></section>
+
+      <section class="result-header">
+        <div><strong id="resultCount">0</strong> объектов <span id="filterCaption" class="muted"></span></div>
+        <div class="result-actions">
+          <select id="sortSelect" class="compact-select">
+            <option value="priority">Сортировка: приоритет</option>
+            <option value="region">По региону</option>
+            <option value="name">По названию</option>
+            <option value="area">По площади</option>
+          </select>
+        </div>
+      </section>
+
+      <section id="tableView" class="view-panel"></section>
+      <section id="cardsView" class="view-panel hidden"></section>
+      <section id="mapView" class="view-panel hidden">
+        <div class="map-layout">
+          <div class="map-list" id="mapList"></div>
+          <div class="map-canvas-wrap">
+            <div id="mapBanner" class="map-banner"></div>
+            <div id="mapCanvas" class="map-canvas"></div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div id="drawerBackdrop" class="backdrop hidden"></div>
+  <aside id="detailDrawer" class="drawer" aria-hidden="true">
+    <div class="drawer-head">
+      <div><span class="eyebrow">Карточка объекта</span><h2 id="drawerTitle"></h2></div>
+      <button id="closeDrawer" class="icon-btn" type="button">×</button>
+    </div>
+    <div id="drawerBody" class="drawer-body"></div>
+  </aside>
+
+  <div id="specModal" class="modal hidden" role="dialog" aria-modal="true">
+    <div class="modal-card wide">
+      <div class="modal-head">
+        <div><span class="eyebrow">Спецификации</span><h2>Загрузка файла</h2></div>
+        <button class="icon-btn modal-close" data-close="specModal" type="button">×</button>
+      </div>
+      <div class="modal-body">
+        <label class="field-label">Привязать к объекту</label>
+        <select id="specProjectSelect" class="field"></select>
+        <div id="dropZone" class="drop-zone" tabindex="0">
+          <input id="specFileInput" type="file" accept=".xlsx,.xls,.csv,.pdf,.docx" hidden />
+          <div class="drop-icon">⇧</div>
+          <strong>Перетащите спецификацию сюда</strong>
+          <span>или нажмите для выбора файла · XLSX, XLS, CSV, PDF, DOCX</span>
+        </div>
+        <div id="specPreview" class="spec-preview hidden"></div>
+        <div class="modal-actions">
+          <button class="secondary-btn modal-close" data-close="specModal" type="button">Отмена</button>
+          <button id="saveSpecBtn" class="primary-btn" type="button" disabled>Сохранить локально</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="attachmentsModal" class="modal hidden" role="dialog" aria-modal="true">
+    <div class="modal-card wide">
+      <div class="modal-head">
+        <div><span class="eyebrow">Хранилище MVP</span><h2>Загруженные спецификации</h2></div>
+        <button class="icon-btn modal-close" data-close="attachmentsModal" type="button">×</button>
+      </div>
+      <div id="attachmentsList" class="modal-body"></div>
+    </div>
+  </div>
+
+  <div id="mapSettingsModal" class="modal hidden" role="dialog" aria-modal="true">
+    <div class="modal-card">
+      <div class="modal-head">
+        <div><span class="eyebrow">Интеграция</span><h2>Google Maps</h2></div>
+        <button class="icon-btn modal-close" data-close="mapSettingsModal" type="button">×</button>
+      </div>
+      <div class="modal-body">
+        <p class="muted">Ключ хранится только в localStorage этого браузера. Для production перенесите ключ в переменные окружения и ограничьте домен в Google Cloud Console.</p>
+        <label class="field-label" for="googleMapsKey">Google Maps JavaScript API key</label>
+        <input id="googleMapsKey" class="field" placeholder="AIza…" autocomplete="off" />
+        <div class="modal-actions">
+          <button class="secondary-btn modal-close" data-close="mapSettingsModal" type="button">Закрыть</button>
+          <button id="saveMapKey" class="primary-btn" type="button">Сохранить и подключить</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast" class="toast hidden"></div>
+
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+  <script src="app.js" defer></script>
+</body>
+</html>
