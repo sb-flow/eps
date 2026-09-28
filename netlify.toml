@@ -1,0 +1,6 @@
+# Replace the existing static site's publish settings; do not create another site.
+[build]
+  command = "npm run build"
+  publish = ".next"
+[build.environment]
+  NODE_VERSION = "24"
