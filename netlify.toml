@@ -1,6 +1,7 @@
-# Replace the existing static site's publish settings; do not create another site.
+# Next.js CRM deployment on Netlify
 [build]
   command = "npm run build"
   publish = ".next"
+
 [build.environment]
-  NODE_VERSION = "24"
+  NODE_VERSION = "22"
